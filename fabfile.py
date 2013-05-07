@@ -22,8 +22,9 @@ import boto.ec2
 #from boto.ec2 import *
 import yaml
 
+env.use_ssh_config = False
 env.keepalive = True
-env.connection_attempts = 2
+env.connection_attempts = 5
 env.warn_only = 1
 env.output_prefix = 1
 
@@ -64,35 +65,108 @@ def bootstrap():
         print(yellow('\t-> Assuming EC2 mode.'))
         env.mode = 'ec2'
     if env.mode == 'ec2':
-        chef_ip = _create_chef_instance()
+        chef_ip = _create_chef_instance_ec2()
         env.user = config['AWS']['AWS_SSH_USER']
         if not env.dry:
             if chef_ip:
                 env.hosts.append(chef_ip)
                 execute(_install_chef_server, chef_ip)
+            print(green('\nChefabulous instance has been deployed.\n'))
+            print(green('Log with:\n'))
+            print(green('$> ssh -i {0} {1}@{2}\n'.format(creds['AWS']['IDENTIFY_FILE'], config['AWS']['AWS_SSH_USER'], chef_ip)))
         else:
             print(cyan("Would have moved on with provisioning of the Chef server."))
 
 
-def _create_chef_instance():
+@task
+def nuke():
+    if not env.mode:
+        print(yellow('\t-> Please make sure ec2/standalone modes.'))
+        print(yellow('\t-> Assuming EC2 mode.'))
+        env.mode = 'ec2'
+    if env.mode == 'ec2':
+        _delete_chef_instance_ec2()
+
+
+def _delete_chef_instance_ec2():
+    ec2_connection = _get_ec2_connection()
+    print('Connected to {0}'.format(str(ec2_connection).split(":")[1]))
+    check_if_exists = ec2_connection.get_all_instances(filters={'tag-key': config['AWS']['AWS_TAG_NAME']})
+    #for reservation in check_if_exists:
+    #    print(reservation.instances[0].id)
+    if check_if_exists:
+        print(yellow('Chefabulous instance(s) found. Proceeding with deletion (30 secs timeout)...'))
+        ec2_connection.terminate_instances([reservation.instances[0].id for reservation in check_if_exists])
+        for reservation in check_if_exists:
+            instance = reservation.instances[0]
+            if not instance.state == u'terminated':
+                print(green('Waiting for instance {0} to shutdown...'.format(instance.id)))
+                timeout = 0
+                while(instance.state == u'running') and timeout != 30:
+                    time.sleep(5)
+                    timeout += 5
+                    instance.update()
+                timeout = 0
+                while(instance.state == u'stoping' or instance.state == u'shutting-down') and timeout != 30:
+                    time.sleep(5)
+                    instance.update()
+                    print(yellow("Instance {0} state: {1}".format(instance.id, instance.state)))
+                    timeout += 5
+                    if instance.state == u'terminated':
+                        timeout = 30
+                        print(green("Chefabulous instance {0} has been terminated.".format(instance.id)))
+            else:
+                print(yellow("Chefabulous instance {0} has been terminated.".format(instance.id)))
+            instance.update()
+            ec2_connection.delete_tags([instance.id], {config['AWS']['AWS_TAG_NAME']: ''})
+            try:
+                print('Attempting to delete {0} security group...'.format(config['AWS']['AWS_SEC_GROUP']))
+                ec2_connection.delete_security_group(config['AWS']['AWS_SEC_GROUP'], "Chefabulous security group")
+                print(green('...{0} security group has been deleted.'.format(config['AWS']['AWS_SEC_GROUP'].title())))
+            except boto.exception.EC2ResponseError:
+                print(yellow("Could not find {0} security group... Perhaps it's already been deleted ?".format(config['AWS']['AWS_SEC_GROUP'].title())))
+            print(green('\nChefabulous is no more. Sad face.'))
+    else:
+        print(green('Could not find any Chefabulous instances tagged...'))
+        print(green('\nChefabulous is no more. Sad face.'))
+
+
+def _create_chef_instance_ec2():
     ec2_connection = _get_ec2_connection()
     print('Connected to {0}'.format(str(ec2_connection).split(":")[1]))
     try:
         print('Attempting to create {0} security group...'.format(config['AWS']['AWS_SEC_GROUP']))
         if not env.dry:
             ec2_connection.create_security_group(config['AWS']['AWS_SEC_GROUP'], "Chefabulous security group")
+            print(green('...created.'))
         else:
             print(cyan("... but we're in DRY RUN mode."))
     except boto.exception.EC2ResponseError:
         print('...but {0} security group already exists. Moving on.'.format(config['AWS']['AWS_SEC_GROUP']))
-    check_if_exists = ec2_connection.get_all_instances(filters={'tag-key': 'chefabulous'})
+    check_if_exists = ec2_connection.get_all_instances(filters={'tag-key': config['AWS']['AWS_TAG_NAME']})
+    for reservation in check_if_exists:
+        print(reservation.instances[0].id)
     if check_if_exists:
-        print(yellow('Chefabulous instance already exists. Bailing out.'))
-        instance = check_if_exists[0].instances[0]
-        if instance.public_dns_name:
-            print('Public DNS of the previous one: {0}'.format(instance.public_dns_name))
-            _ips_perms(ec2_connection, config['AWS']['AWS_SEC_GROUP'])
-        exit(1)
+        print(yellow('Previous Chefabulous instance(s) were found...'))
+        for reservation in check_if_exists:
+            instance = reservation.instances[0]
+            if not instance.state == u'terminated':
+                if instance.state == u'stoping' or instance.state == u'shutting-down':
+                    print instance.state
+                    print(yellow('Waiting 30s for previous Chefabulous state to be either terminated or stopped.'))
+                    timeout = 0
+                    while(instance.state == u'stoping' or instance.state == u'shutting-down') and timeout != 30:
+                        time.sleep(5)
+                        timeout += 5
+                elif instance.state == u'running':
+                    print(red('...only one Chefabulous should be created.'))
+                    if instance.public_dns_name:
+                        print('Public DNS of the previous one: {0}'.format(instance.public_dns_name))
+                    _ips_perms(ec2_connection, config['AWS']['AWS_SEC_GROUP'])
+                    exit(1)
+                else:
+                    print(red('Could not figure Chefabulous instance state. Bailing out.'))
+                    exit(1)
     if env.dry:
         print(cyan('Instance would have been created with the following settings:'))
         print(cyan("{0} {1} {2} {3} {4}".format(config['AWS']['AWS_IMAGE'],
@@ -107,13 +181,13 @@ def _create_chef_instance():
                                                    placement=config['AWS']['AWS_AVAILABILITY_ZONE'],
                                                    instance_type=config['AWS']['AWS_FLAVOR'])
         instance = reservation.instances[0]
-        ec2_connection.create_tags([instance.id], {'Name': 'Chefabulous',
-                                                   config['AWS']['AWS_NODE_NAME']: ''})
+        ec2_connection.create_tags([instance.id], {'Name': config['AWS']['AWS_NODE_NAME'],
+                                                   config['AWS']['AWS_TAG_NAME']: ''})
         while instance.state == u'pending':
-            print(yellow("Instance state: %s" % instance.state))
+            print(yellow("Instance {0} state: {1}".format(instance.id, instance.state)))
             time.sleep(10)
             instance.update()
-        print(green("Instance state: %s" % instance.state))
+        print(green("Instance {0} state: {1}".format(instance.id, instance.state)))
         print(green("Public DNS: %s" % instance.public_dns_name))
 
         _ips_perms(ec2_connection, config['AWS']['AWS_SEC_GROUP'])
