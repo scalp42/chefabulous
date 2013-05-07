@@ -11,6 +11,11 @@ AWS:
     AWS_SEC_GROUP: 'chefabulous'
     AWS_TAG_NAME: 'chefabulous'
 
+# Vagrant settings
+
+VAGRANT:
+    HOST: 'chefabulous'
+
 
 # Chefabulous security group IPs
 

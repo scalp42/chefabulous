@@ -28,6 +28,8 @@ env.connection_attempts = 5
 env.warn_only = 1
 env.output_prefix = 1
 
+if not 'mode' in env:
+    env.mode = None
 if len(env.tasks) >= 1:
     config_file = open('settings.yml', 'r')
     config = yaml.load(config_file)
@@ -55,15 +57,27 @@ def standalone():
 
 @task
 def vagrant():
+    """Get information about current Vagrant dev environment"""
     env.mode = 'vagrant'
+    running = local('vagrant status | sed 1,2d | head -n 1 | grep running | tr -s \' \' | awk \'{print $1}\'', capture=True).splitlines()
+    if running:
+        for vm in running:
+            ssh_info = local('vagrant ssh-config %s' % vm, capture=True).splitlines()[1:]
+            vagrant_info = dict([l.strip().split(' ', 1) for l in ssh_info if l.strip()])
+            env.key_filename = vagrant_info['IdentityFile'].strip('"')
+            env.hosts.append('%(User)s@%(HostName)s:%(Port)s' % vagrant_info)
+            pprint(env.hosts)
+    else:
+        print(red('Please start the VM with `vagrant up {0}` first. Exiting.'.format(config['VAGRANT']['HOST'])))
+        exit(1)
 
 
 @task
 def bootstrap():
     if not env.mode:
-        print(yellow('\t-> Please make sure ec2/standalone modes.'))
-        print(yellow('\t-> Assuming EC2 mode.'))
-        env.mode = 'ec2'
+        print(yellow('Please specify which mode to use:'))
+        print(yellow('$> fab [ec2|vagrant] bootstrap.'))
+        exit(1)
     if env.mode == 'ec2':
         chef_ip = _create_chef_instance_ec2()
         env.user = config['AWS']['AWS_SSH_USER']
@@ -76,6 +90,13 @@ def bootstrap():
             print(green('$> ssh -i {0} {1}@{2}\n'.format(creds['AWS']['IDENTIFY_FILE'], config['AWS']['AWS_SSH_USER'], chef_ip)))
         else:
             print(cyan("Would have moved on with provisioning of the Chef server."))
+    elif env.mode == 'vagrant':
+        host = run('hostname')
+        if not re.match('^{0}$'.format(config['VAGRANT']['HOST']), host):
+            print(yellow("Please make sure that the VM host match the settings."))
+            print(yellow('Settings say "{0}" and VM reports "{1}"'.format(config['VAGRANT']['HOST'], host)))
+            print(yellow('\nBailing out by precaution.\n'))
+            return
 
 
 @task
