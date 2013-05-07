@@ -9,6 +9,7 @@ AWS:
     AWS_FLAVOR: 't1.micro'
     AWS_SSH_USER: 'ubuntu'
     AWS_SEC_GROUP: 'chefabulous'
+    AWS_TAG_NAME: 'chefabulous'
 
 
 # Chefabulous security group IPs
