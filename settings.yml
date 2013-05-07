@@ -1,7 +1,7 @@
 # EC2 settings
 
 AWS:
-    AWS_DRY_RUN: False
+    AWS_DRY_RUN: True
     AWS_NODE_NAME: 'chefabulous'
     AWS_REGION: 'us-west-1'
     AWS_AVAILABILITY_ZONE: 'us-west-1a'
