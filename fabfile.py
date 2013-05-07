@@ -79,7 +79,7 @@ def _create_chef_instance():
     print('Connected to {0}'.format(str(ec2_connection).split(":")[1]))
     try:
         print('Attempting to create {0} security group...'.format(config['AWS']['AWS_SEC_GROUP']))
-        if env.dry:
+        if not env.dry:
             ec2_connection.create_security_group(config['AWS']['AWS_SEC_GROUP'], "Chefabulous security group")
         else:
             print(cyan("... but we're in DRY RUN mode."))
