@@ -26,7 +26,7 @@ But hey, feel free to [contribute](https://github.com/scalp42/chefabulous#need-h
 	- [fabtools](https://fabtools.readthedocs.org)
 	- [boto](http://docs.pythonboto.org)
 - [Vagrant](http://www.vagrantup.com/) (optional)
-- AWS credentials (optional)
+- [AWS credentials](https://portal.aws.amazon.com/gp/aws/securityCredentials) (optional)
 
 ### Installation (MacOsX):
 
@@ -98,7 +98,7 @@ The name of the security group used by Chefabulous on AWS EC2. Can be modified w
 
 ###### ['AWS']['AWS_TAG_NAME']: 'chefabulous'
 
-This parameter is **highly** important. It's used to determine if a Chefabulous is already running or not.
+This parameter is **highly** important. It's used to determine if a Chefabulous instance is already running or not.
 
 ###### [VAGRANT]['HOST']: 'chefabulous'
 
@@ -133,6 +133,8 @@ The private key associated to your keypair on AWS EC2.
 
 ## Roadmap:
 
+- clean output
+- add safety checks regarding lack of AWS creds etc
 - create a PyPI package with 'chefabulous' binary/script
 - support ubuntu 10.04
 - support multiple chef server versions
