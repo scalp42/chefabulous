@@ -24,9 +24,11 @@ import yaml
 
 env.use_ssh_config = False
 env.keepalive = True
-env.connection_attempts = 5
+env.connection_attempts = 30
 env.warn_only = 1
 env.output_prefix = 1
+
+env.supported = ['precise']
 
 if not 'mode' in env:
     env.mode = None
@@ -44,6 +46,10 @@ if config['AWS']['AWS_DRY_RUN']:
 else:
     env.dry = False
 
+if 'vagrant' in env.tasks and 'ec2' in env.tasks:
+    print(yellow('Please specify only ONE mode.'))
+    exit(1)
+
 
 @task
 def ec2():
@@ -56,6 +62,7 @@ def standalone():
 
 
 @task
+@with_settings(hide('everything'), warn_only=True)
 def vagrant():
     """Get information about current Vagrant dev environment"""
     env.mode = 'vagrant'
@@ -87,26 +94,34 @@ def bootstrap():
                 execute(_install_chef_server, chef_ip)
             print(green('\nChefabulous instance has been deployed.\n'))
             print(green('Log with:\n'))
-            print(green('$> ssh -i {0} {1}@{2}\n'.format(creds['AWS']['IDENTIFY_FILE'], config['AWS']['AWS_SSH_USER'], chef_ip)))
+            print(green('$> ssh -i {0} {1}@{2}\n'.format(creds['AWS']['IDENTITY_FILE'], config['AWS']['AWS_SSH_USER'], chef_ip)))
         else:
             print(cyan("Would have moved on with provisioning of the Chef server."))
     elif env.mode == 'vagrant':
-        host = run('hostname')
-        if not re.match('^{0}$'.format(config['VAGRANT']['HOST']), host):
-            print(yellow("Please make sure that the VM host match the settings."))
-            print(yellow('Settings say "{0}" and VM reports "{1}"'.format(config['VAGRANT']['HOST'], host)))
-            print(yellow('\nBailing out by precaution.\n'))
-            return
+        if run('hostname').succeeded:
+            host = run('hostname')
+            if not re.match('^{0}$'.format(config['VAGRANT']['HOST']), host):
+                print(yellow("Please make sure that the VM host match the settings."))
+                print(yellow('Settings say "{0}" and VM reports "{1}"'.format(config['VAGRANT']['HOST'], host)))
+                print(yellow('\nBailing out by precaution.\n'))
+                exit(1)
+            else:
+                _install_chef_server()
+    else:
+        print(red('Could not SSH into the Vagrant VM.'))
+        print(red('Bailing out.'))
 
 
 @task
 def nuke():
     if not env.mode:
-        print(yellow('\t-> Please make sure ec2/standalone modes.'))
-        print(yellow('\t-> Assuming EC2 mode.'))
-        env.mode = 'ec2'
+        print(yellow('Please specify which mode to use:'))
+        print(yellow('$> fab [ec2|vagrant] bootstrap.'))
+        exit(1)
     if env.mode == 'ec2':
         _delete_chef_instance_ec2()
+    if env.mode == 'vagrant':
+        _delete_chef_instance_vagrant()
 
 
 def _delete_chef_instance_ec2():
@@ -143,6 +158,8 @@ def _delete_chef_instance_ec2():
             try:
                 print('Attempting to delete {0} security group...'.format(config['AWS']['AWS_SEC_GROUP']))
                 ec2_connection.delete_security_group(config['AWS']['AWS_SEC_GROUP'], "Chefabulous security group")
+                instance.update()
+                ec2_connection.delete_security_group(config['AWS']['AWS_SEC_GROUP'], "Chefabulous security group")
                 print(green('...{0} security group has been deleted.'.format(config['AWS']['AWS_SEC_GROUP'].title())))
             except boto.exception.EC2ResponseError:
                 print(yellow("Could not find {0} security group... Perhaps it's already been deleted ?".format(config['AWS']['AWS_SEC_GROUP'].title())))
@@ -150,6 +167,10 @@ def _delete_chef_instance_ec2():
     else:
         print(green('Could not find any Chefabulous instances tagged...'))
         print(green('\nChefabulous is no more. Sad face.'))
+
+
+def _delete_chef_instance_vagrant():
+    local('vagrant destroy {0} --force'.format(config['VAGRANT']['HOST']))
 
 
 def _create_chef_instance_ec2():
@@ -243,10 +264,32 @@ def _get_ec2_connection():
                                       aws_secret_access_key=creds['AWS']['AWS_SECRET_ACCESS_KEY'])
 
 
-def _install_chef_server(chef_ip):
-    pprint(env.hosts)
-
+def _install_chef_server(chef_ip=None):
+    if env.host == '127.0.0.1':
+        env.current = '{0} VM'.format(config['VAGRANT']['HOST'])
+    else:
+        env.current = env.host
+    print(green('Proceeding with Chef server install on {0}'.format(env.current)))
     if (deb.distrib_codename().succeeded):
-        print(green('--> Checking for distrib codename on %s' % env.host))
+        print(green('--> Checking for distrib codename on %s' % env.current))
         distrib = deb.distrib_codename()
-    print distrib
+        if distrib not in env.supported:
+            print(red('Please use a supported distribution.'))
+            exit(1)
+    else:
+        print(yellow('Only Ubuntu is supported at the current moment.'))
+        exit(1)
+    deb.update_index(quiet=True)
+    deb.upgrade(safe=True)
+    require.files.directory('chefabulous', mode=755)
+    with cd('chefabulous'):
+        require.files.file(url='https://opscode-omnibus-packages.s3.amazonaws.com/ubuntu/12.04/x86_64/chef-server_11.0.8-1.ubuntu.12.04_amd64.deb',
+                           md5='076bfc8409ef2bc1818c9c515b472b82',
+                           verify_remote=True,
+                           mode=755)
+        if not deb.is_installed('chef-server'):
+            print(yellow('Chef server is not installed.'))
+            sudo('dpkg -i chef-server_11.0.8-1.ubuntu.12.04_amd64.deb')
+    if not files.is_dir('/etc/chef-server'):
+        if sudo('chef-server-ctl reconfigure').succeeded:
+            print(green('Chef server has been configured on {0}!'.format(env.current)))

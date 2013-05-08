@@ -30,8 +30,3 @@ AWS_SEC_IPS:
         from: 443
         to: 443
         cidr: '0.0.0.0/0'
-    rule3:
-        proto: 'tcp'
-        from: 444
-        to: 444
-        cidr: '0.0.0.0/0'
