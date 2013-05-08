@@ -53,7 +53,7 @@ But hey, feel free to [contribute](https://github.com/scalp42/chefabulous#need-h
 
 	$> bundle install
 	
-7) Make sure the `Vagrant` VM host matches ['VAGRANT']['HOST'] (see [vagrant settings](https://github.com/scalp42/chefabulous#vagranthost-chefabulous))
+7) Make sure the `Vagrant` VM host matches ['VAGRANT']['HOST'] see [vagrant settings](https://github.com/scalp42/chefabulous#vagranthost-chefabulous)
 
 ### Usage:
 	
