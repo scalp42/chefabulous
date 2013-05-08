@@ -137,6 +137,7 @@ The private key associated to your keypair on AWS EC2.
 - support ubuntu 10.04
 - support multiple chef server versions
 - allow WebUI password to be modified in settings
+- robust Chef server provisioning
 
 
 
