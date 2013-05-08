@@ -1,0 +1,4 @@
+Fabric==1.6.0
+boto==2.9.2
+botocore==0.8.1
+fabtools==0.13.0

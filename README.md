@@ -28,7 +28,7 @@ But hey, feel free to [contribute](https://github.com/scalp42/chefabulous#need-h
 - Vagrant (optional)
 - AWS credentials (optional)
 
-### Installation (MacOSX):
+### Installation (MacOsX):
 
 1) Install Python 2.7:
 
