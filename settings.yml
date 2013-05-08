@@ -11,6 +11,11 @@ AWS:
     AWS_SEC_GROUP: 'chefabulous'
     AWS_TAG_NAME: 'chefabulous'
 
+# Vagrant settings
+
+VAGRANT:
+    HOST: 'chefabulous'
+
 
 # Chefabulous security group IPs
 
@@ -24,9 +29,4 @@ AWS_SEC_IPS:
         proto: 'tcp'
         from: 443
         to: 443
-        cidr: '0.0.0.0/0'
-    rule3:
-        proto: 'tcp'
-        from: 444
-        to: 444
         cidr: '0.0.0.0/0'
