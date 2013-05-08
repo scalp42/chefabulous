@@ -138,6 +138,7 @@ The private key associated to your keypair on AWS EC2.
 - support multiple chef server versions
 - allow WebUI password to be modified in settings
 - robust Chef server provisioning
+- add an option to override the cidr for SSH access limited to the host running chefabulous
 
 
 
