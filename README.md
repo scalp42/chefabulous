@@ -22,10 +22,10 @@ But hey, feel free to [contribute](https://github.com/scalp42/chefabulous#need-h
 ### Requirements:
 
 - Python 2.7, with the following packages:
-	- Fabric
-	- Fabtools
-	- Boto
-- Vagrant (optional)
+	- [fabric](http://docs.fabfile.org)
+	- [fabtools](https://fabtools.readthedocs.org)
+	- [boto](http://docs.pythonboto.org)
+- [Vagrant](http://www.vagrantup.com/) (optional)
 - AWS credentials (optional)
 
 ### Installation (MacOsX):
@@ -53,7 +53,7 @@ But hey, feel free to [contribute](https://github.com/scalp42/chefabulous#need-h
 
 	$> bundle install
 	
-7) Profit.
+7) Make sure the `Vagrant` VM host matches ['VAGRANT']['HOST'] (see [vagrant settings](https://github.com/scalp42/chefabulous#vagranthost-chefabulous))
 
 ### Usage:
 	
@@ -152,9 +152,9 @@ It is more important to me that you are able to contribute and get help if you n
 
 That said, some basic guidelines, which you are free to ignore :)
 
-- Have a problem you want **chefabulous** to solve for you ? You can email me personally (scalisia@gmail.com)
-- Have an idea or a feature request? File a ticket on Github, or email me personally (scalisia@gmail.com) if that is more comfortable.
-- If you think you found a bug, it probably is a bug. Please file a ticket on Github.
+- Have a problem you want [**chefabulous**](https://github.com/scalp42/chefabulous) to solve for you ? You can email me personally (scalisia@gmail.com)
+- Have an idea or a feature request? File a [ticket on Github](https://github.com/scalp42/chefabulous/issues/new), or email me personally (scalisia@gmail.com) if that is more comfortable.
+- If you think you found a bug, it probably is a bug. Please file a [ticket on Github](https://github.com/scalp42/chefabulous/issues/new).
 - If you want to contribute, best way is to fork this repo and send me a pull request. If you don't know git, I also accept diff(1) formatted patches - whatever is most comfortable for you.
 
 **Programming is not a required skill. Whatever you've seen about open source with maintainers or community members saying "send patches or die" -  you will not see that here.**
