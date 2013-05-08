@@ -44,10 +44,10 @@ But hey, feel free to [contribute](https://github.com/scalp42/chefabulous#need-h
 4) Install [fabric](http://docs.fabfile.org) and [fabtools](https://fabtools.readthedocs.org), as well as [boto](http://docs.pythonboto.org) for AWS EC2:
 
 	$> pip install -r requirements.txt
-5) Set your credentials (see [configuration](https://github.com/scalp42/chefabulous#configuration) for more details)
+5) Set your credentials (see [credentials section](https://github.com/scalp42/chefabulous#credentialsyml) for more details)
 
 	cp credentials.yml.example credentials.yml
-6) Set your settings in `settings.yml` (see [configuration](https://github.com/scalp42/chefabulous#configuration) for more details)
+6) Set your settings in `settings.yml` (see [settings section](https://github.com/scalp42/chefabulous#settingsyml) for more details)
 
 7) A `.rvmrc` and `Gemfile` is provided to help you install Vagrant
 
