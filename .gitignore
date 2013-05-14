@@ -16,3 +16,4 @@ Thumbs.db
 .vagrant
 credentials.py
 credentials.yml
+settings.yml

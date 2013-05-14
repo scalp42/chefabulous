@@ -49,6 +49,8 @@ But hey, feel free to [contribute](https://github.com/scalp42/chefabulous#need-h
 	cp credentials.yml.example credentials.yml
 6) Set your settings in `settings.yml` (see [settings section](https://github.com/scalp42/chefabulous#settingsyml) for more details)
 
+	cp settings.yml.example settings.yml
+
 7) A `.rvmrc` and `Gemfile` is provided to help you install Vagrant
 
 	$> bundle install
