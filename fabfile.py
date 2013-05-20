@@ -143,7 +143,7 @@ def _delete_chef_instance_ec2():
                     timeout += 5
                     instance.update()
                 timeout = 0
-                while(instance.state == u'stoping' or instance.state == u'shutting-down') and timeout != 30:
+                while(instance.state == u'stopping' or instance.state == u'shutting-down') and timeout != 30:
                     time.sleep(5)
                     instance.update()
                     print(yellow("Instance {0} state: {1}".format(instance.id, instance.state)))
@@ -193,11 +193,11 @@ def _create_chef_instance_ec2():
         for reservation in check_if_exists:
             instance = reservation.instances[0]
             if not instance.state == u'terminated':
-                if instance.state == u'stoping' or instance.state == u'shutting-down':
+                if instance.state == u'stopping' or instance.state == u'shutting-down':
                     print instance.state
                     print(yellow('Waiting 30s for previous Chefabulous state to be either terminated or stopped.'))
                     timeout = 0
-                    while(instance.state == u'stoping' or instance.state == u'shutting-down') and timeout != 30:
+                    while(instance.state == u'stopping' or instance.state == u'shutting-down') and timeout != 30:
                         time.sleep(5)
                         timeout += 5
                 elif instance.state == u'running':
